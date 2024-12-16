@@ -80,7 +80,7 @@ def main(cfg: DictConfig):
     for image_path in tqdm(test_data_path.glob("*.png"), desc="Preparing test data"):
         image = Image.open(image_path)
         image.save(output_dir_test / image_path.name)
-    print(f"All train files have been created in the {output_dir_test} directory")
+    print(f"All test files have been created in the {output_dir_test} directory")
 
 
 if __name__ == "__main__":
