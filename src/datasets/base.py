@@ -4,7 +4,7 @@ from typing import Union
 from PIL import Image
 from torch.utils.data import Dataset
 
-from src.utils.io_utils import ROOT_PATH
+ROOT_PATH = Path(__file__).absolute().resolve().parent.parent.parent
 
 
 class BaseDataset(Dataset):
