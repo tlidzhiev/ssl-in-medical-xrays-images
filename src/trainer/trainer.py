@@ -24,7 +24,7 @@ class Trainer():
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     def training_epoch(self, epoch, tqdm_desc):
-        self.writer.set_step((epoch - 1) * self.epoch_len)
+        self.writer.set_step(epoch - 1)
         self.writer.add_scalar("epoch", epoch)
 
         train_loss = []
@@ -50,7 +50,7 @@ class Trainer():
 
             train_loss.append(loss.item())
 
-        self.writer.set_step(epoch)
+        self.writer.set_step(epoch - 1)
         self.writer.add_scalar(
             "learning rate", self.scheduler.get_last_lr()[0]
         )
@@ -71,7 +71,7 @@ class Trainer():
 
             test_loss.append(loss.item())
 
-        self.writer.set_step(epoch, part)
+        self.writer.set_step(epoch - 1, part)
         self.writer.add_scalar(f"{part} loss", np.mean(test_loss))
 
     def train(self):

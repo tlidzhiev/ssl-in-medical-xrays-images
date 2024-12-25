@@ -1,5 +1,6 @@
 import argparse
 import torch
+import torch.nn as nn
 import torchvision.transforms as T
 from torch.utils.data import DataLoader
 
@@ -8,6 +9,18 @@ from transformers import AutoImageProcessor, AutoModel
 
 from src.trainer import Trainer, WandBWriter
 from src.datasets import BinaryLabelDataset
+
+class LinProbModel(nn.Module):
+    def __init__(self, encoder, num_class=1) -> None:
+        super().__init__()
+
+        self.encoder = encoder
+        self.fc = nn.Linear(768, num_class)
+    
+    def forward(self, x):
+        x = self.encoder(x)
+        x = self.fc(x)
+        return x
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -23,17 +36,17 @@ def main():
 
     batch_size = 64
     num_epochs = 100
-    save_model_step = True
+    save_model_step = False
     scheduler_per_batch = True
-    freeze_enc = False
+    freeze_enc = True
     init_lr = 1e-3
 
     processor = AutoImageProcessor.from_pretrained("microsoft/rad-dino")
-    model = AutoModel.from_pretrained("microsoft/rad-dino")
+    model = LinProbModel(AutoModel.from_pretrained("microsoft/rad-dino"), 1)
     print(model)
 
-    train_dataset = BinaryLabelDataset(images_dir=, labels_dir=, transform=T.ToTensor())
-    val_dataset = BinaryLabelDataset(images_dir=, labels_dir=, transform=T.ToTensor())
+    train_dataset = BinaryLabelDataset(images_dir=, labels_dir=, transform=processor)
+    val_dataset = BinaryLabelDataset(images_dir=, labels_dir=, transform=processor)
     train_loader =  DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=4)
     val_loader =  DataLoader(val_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=4)
     log_step = len(train_loader)
