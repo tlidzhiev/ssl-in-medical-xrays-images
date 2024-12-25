@@ -44,11 +44,11 @@ def main():
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     processor = AutoImageProcessor.from_pretrained("microsoft/rad-dino")
-    model = LinProbModel(AutoModel.from_pretrained("microsoft/rad-dino"), 1).to(device)
+    model = LinProbModel(AutoModel.from_pretrained("microsoft/rad-dino"), 2).to(device)
     print(model)
 
-    train_dataset = BinaryLabelDataset(images_dir=, labels_dir=, transform=processor)
-    val_dataset = BinaryLabelDataset(images_dir=, labels_dir=, transform=processor)
+    train_dataset = BinaryLabelDataset(images_dir="/kaggle/working/ssl-in-medical-xrays-images/data/dataset_256/train/images", labels_dir="/kaggle/working/ssl-in-medical-xrays-images/data/dataset_256/train/labels", transform=processor)
+    val_dataset = BinaryLabelDataset(images_dir="/kaggle/working/ssl-in-medical-xrays-images/data/dataset_256/val/images", labels_dir="/kaggle/working/ssl-in-medical-xrays-images/data/dataset_256/val/labels", transform=processor)
     train_loader =  DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=4)
     val_loader =  DataLoader(val_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=4)
     log_step = len(train_loader)
