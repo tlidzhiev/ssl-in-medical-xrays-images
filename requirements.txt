@@ -6,4 +6,4 @@ pandas
 wandb
 transformers
 torchvision==0.17.0
-hydra
+hydra-core
