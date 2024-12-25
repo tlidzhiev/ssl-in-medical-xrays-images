@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 
 class Trainer():
     def __init__(self, num_epochs, save_model_step, scheduler_per_batch, freeze_enc, log_step, device,

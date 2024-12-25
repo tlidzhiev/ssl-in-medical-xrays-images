@@ -18,8 +18,8 @@ class LinProbModel(nn.Module):
         self.fc = nn.Linear(768, num_class)
     
     def forward(self, x):
-        x = self.encoder(x)
-        x = self.fc(x)
+        x = self.encoder(**x)
+        x = self.fc(x.pooler_output)
         return x
 
 def parse_args():
@@ -34,7 +34,7 @@ def main():
         project_name=args.project_name,
     )
 
-    batch_size = 64
+    batch_size = 12
     num_epochs = 100
     save_model_step = False
     scheduler_per_batch = True
