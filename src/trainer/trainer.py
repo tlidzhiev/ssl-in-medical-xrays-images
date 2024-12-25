@@ -3,7 +3,7 @@ import numpy as np
 import tqdm
 
 class Trainer():
-    def __init__(self, num_epochs, save_model_step, scheduler_per_batch, freeze_enc, log_step, 
+    def __init__(self, num_epochs, save_model_step, scheduler_per_batch, freeze_enc, log_step, device,
                  model, optimizer, criterion, scheduler, train_loader, test_loader, writer):
         self.num_epochs = num_epochs
         self.save_model_step = save_model_step
@@ -21,7 +21,7 @@ class Trainer():
 
         self.writer = writer
 
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.device = device
 
     def training_epoch(self, epoch, tqdm_desc):
         self.writer.set_step(epoch - 1)
@@ -35,7 +35,7 @@ class Trainer():
             for param in self.model.fc.parameters(): # or change to your head
                 param.requires_grad = True
 
-        for ind, batch in enumerate(tqdm(self.train_loader, desc=tqdm_desc)):
+        for batch in tqdm(self.train_loader, desc=tqdm_desc):
             images = batch[0].to(self.device)
             labels = batch[1].to(self.device)
 

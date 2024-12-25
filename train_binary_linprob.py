@@ -41,8 +41,10 @@ def main():
     freeze_enc = True
     init_lr = 1e-3
 
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
     processor = AutoImageProcessor.from_pretrained("microsoft/rad-dino")
-    model = LinProbModel(AutoModel.from_pretrained("microsoft/rad-dino"), 1)
+    model = LinProbModel(AutoModel.from_pretrained("microsoft/rad-dino"), 1).to(device)
     print(model)
 
     train_dataset = BinaryLabelDataset(images_dir=, labels_dir=, transform=processor)
@@ -63,6 +65,7 @@ def main():
         scheduler_per_batch=scheduler_per_batch, 
         freeze_enc=freeze_enc, 
         log_step=log_step, 
+        device = device,
         model=model, 
         optimizer=optimizer, 
         criterion=criterion, 
