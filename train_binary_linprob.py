@@ -34,12 +34,13 @@ def main():
         project_name=args.project_name,
     )
 
-    batch_size = 12
-    num_epochs = 100
+    batch_size = 12 # len train_loader == 1000, can use with 16Gb GPU
+    num_epochs = 20
     save_model_step = False
     scheduler_per_batch = True
     freeze_enc = True
     init_lr = 1e-3
+    log_step = 250
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -51,7 +52,6 @@ def main():
     val_dataset = BinaryLabelDataset(images_dir="/kaggle/working/ssl-in-medical-xrays-images/data/dataset_256/val/images", labels_dir="/kaggle/working/ssl-in-medical-xrays-images/data/dataset_256/val/labels", transform=processor)
     train_loader =  DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=4)
     val_loader =  DataLoader(val_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=4)
-    log_step = len(train_loader)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=init_lr)
 
