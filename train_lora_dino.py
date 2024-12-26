@@ -39,7 +39,7 @@ def main():
         project_name=args.project_name,
     )
 
-    batch_size = 32 # len train_loader == 1000, can use with 16Gb GPU
+    batch_size = 12 # len train_loader == 1000, can use with 16Gb GPU
     num_epochs = 50
     save_model_step = False
     scheduler_per_batch = True
