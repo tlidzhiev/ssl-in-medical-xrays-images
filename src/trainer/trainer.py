@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 class Trainer():
     def __init__(self, num_epochs, save_model_step, scheduler_per_batch, freeze_enc, log_step, device,
-                 model, optimizer, criterion, scheduler, train_loader, test_loader, writer):
+                 model, optimizer, criterion, scheduler, train_loader, test_loader, writer, metrics):
         self.num_epochs = num_epochs
         self.save_model_step = save_model_step
         self.scheduler_per_batch = scheduler_per_batch
@@ -23,6 +23,8 @@ class Trainer():
 
         self.device = device
 
+        self.metrics = metrics
+
     def training_epoch(self, epoch, tqdm_desc):
         self.writer.set_step((epoch - 1) * len(self.train_loader))
         self.writer.add_scalar("epoch", epoch)
@@ -36,8 +38,10 @@ class Trainer():
                 param.requires_grad = True
 
         for ind, batch in enumerate(tqdm(self.train_loader, desc=tqdm_desc)):
-            images = batch[0].to(self.device)
-            labels = batch[1].to(self.device)
+            images, labels = batch
+            images['pixel_values'] = images['pixel_values'][0]
+            images = images.to(self.device)
+            labels = labels.to(self.device)
 
             self.optimizer.zero_grad()
             logits = self.model(images)
@@ -62,9 +66,16 @@ class Trainer():
     def validation_epoch(self, epoch, part, tqdm_desc):
         test_loss = []
 
+        metrics = {
+                    "accuracy" : [],
+                    "f1_score": [],
+                    "auc": []
+                }
         self.model.eval()
 
-        for images, labels in tqdm(self.test_loader, desc=tqdm_desc):
+        for batch in tqdm(self.test_loader, desc=tqdm_desc):
+            images, labels = batch
+            images['pixel_values'] = images['pixel_values'][0]
             images = images.to(self.device)
             labels = labels.to(self.device)
 
@@ -72,9 +83,15 @@ class Trainer():
             loss = self.criterion(logits, labels)
 
             test_loss.append(loss.item())
+            metric = self.metrics(logits, labels)
+            print(metric)
+            for key, value in metric.items():
+                metrics[key].append(value)
 
         self.writer.set_step(epoch * len(self.train_loader), part)
         self.writer.add_scalar(f"{part} loss", np.mean(test_loss))
+        for key, value in metrics.items():
+            self.writer.add_scalar(f"{part} {key}", np.mean(value))
 
     def train(self):
         for epoch in range(1, self.num_epochs + 1):
