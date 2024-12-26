@@ -61,8 +61,6 @@ class Trainer():
                 )
                 self.writer.add_scalar("train loss", np.mean(train_loss))
                 train_loss = []
-            
-            break
 
 
     @torch.no_grad()
@@ -73,7 +71,7 @@ class Trainer():
 
         self.model.eval()
 
-        i = 0
+        # i = 0
         for batch in tqdm(self.test_loader, desc=tqdm_desc):
             images, labels = batch
             images['pixel_values'] = images['pixel_values'][0]
@@ -89,12 +87,12 @@ class Trainer():
             logits = logits.detach().cpu().numpy().tolist()
             all_logits.extend(logits)
             all_labels.extend(labels)
-            i += 1
-            if i > 50:
-                break
+            # i += 1
+            # if i > 50:
+            #     break
         
         metric = self.metrics(all_logits, all_labels)
-        print(metric)
+        # print(metric)
         self.writer.set_step(epoch * len(self.train_loader), part)
         self.writer.add_scalar(f"{part} loss", np.mean(test_loss))
         for key, value in metric.items():
