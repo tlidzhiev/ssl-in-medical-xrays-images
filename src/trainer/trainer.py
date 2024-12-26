@@ -62,15 +62,13 @@ class Trainer():
                 self.writer.add_scalar("train loss", np.mean(train_loss))
                 train_loss = []
 
+
     @torch.no_grad()
     def validation_epoch(self, epoch, part, tqdm_desc):
         test_loss = []
+        all_logits = []
+        all_labels = []
 
-        metrics = {
-                    "accuracy" : [],
-                    "f1_score": [],
-                    "auc": []
-                }
         self.model.eval()
 
         for batch in tqdm(self.test_loader, desc=tqdm_desc):
@@ -83,14 +81,16 @@ class Trainer():
             loss = self.criterion(logits, labels)
 
             test_loss.append(loss.item())
-            metric = self.metrics(logits, labels)
-            print(metric)
-            for key, value in metric.items():
-                metrics[key].append(value)
 
+            labels = labels.detach().cpu().numpy().tolist()
+            logits = logits.detach().cpu().numpy().tolist()
+            all_logits.extend(logits)
+            all_labels.extend(labels)
+        
+        metric = self.metrics(all_logits, all_labels)
         self.writer.set_step(epoch * len(self.train_loader), part)
         self.writer.add_scalar(f"{part} loss", np.mean(test_loss))
-        for key, value in metrics.items():
+        for key, value in metric.items():
             self.writer.add_scalar(f"{part} {key}", np.mean(value))
 
     def train(self):
@@ -109,5 +109,5 @@ class Trainer():
                 if not self.scheduler_per_batch:
                     self.scheduler.step()
             
-            if epoch % self.save_model_step == 0:
+            if self.save_model_step and epoch % self.save_model_step == 0:
                 torch.save(self.model.state_dict(), "weights.pt")

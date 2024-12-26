@@ -33,9 +33,9 @@ class Metrics_classification():
             return roc_auc_score(y_true, y_pred_proba)
         return roc_auc_score(y_true, y_pred_proba, average='micro', multi_class='ovr')
 
-    def __call__(self, logits: torch.Tensor, labels: torch.Tensor, *args, **kwds):
-        logits = logits.detach().cpu().numpy()
-        labels = labels.detach().cpu().numpy()
+    def __call__(self, logits, labels, *args, **kwds):
+        logits = np.array(logits)
+        labels = np.array(labels)
 
         if self.mode == "binary":
             predictions =  np.argmax(logits, axis=1)
@@ -43,7 +43,7 @@ class Metrics_classification():
         else:
             predictions = (logits > self.threshold).float()
 
-        print(logits, labels, predictions)
+        # print(logits, labels, predictions)
         return {
                 "accuracy" : self.accuracy(labels, predictions),
                 "f1_score": self.f1(labels, predictions, average=self.average),
