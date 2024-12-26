@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from transformers import AutoImageProcessor, AutoModel
 
 from src.trainer import Trainer, WandBWriter, Metrics_classification
-from src.datasets import BinaryLabelDataset
+from src.datasets import MultiLabelDataset
 
 class LinProbModel(nn.Module):
     def __init__(self, encoder, num_class=1) -> None:
@@ -52,8 +52,8 @@ def main():
     model = LinProbModel(AutoModel.from_pretrained("microsoft/rad-dino"), 2).to(device)
     print(model)
 
-    train_dataset = BinaryLabelDataset(images_dir=f"{data_dir}/dataset_256/train/images", labels_dir=f"{data_dir}/dataset_256/train/labels", transform=processor)
-    val_dataset = BinaryLabelDataset(images_dir=f"{data_dir}/dataset_256/val/images", labels_dir=f"{data_dir}/dataset_256/val/labels", transform=processor)
+    train_dataset = MultiLabelDataset(num_classes=14, images_dir=f"{data_dir}/dataset_256/train/images", labels_dir=f"{data_dir}/dataset_256/train/labels", transform=processor)
+    val_dataset = MultiLabelDataset(num_classes=14, images_dir=f"{data_dir}/dataset_256/val/images", labels_dir=f"{data_dir}/dataset_256/val/labels", transform=processor)
     train_loader =  DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=4)
     val_loader =  DataLoader(val_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=4)
 
@@ -63,7 +63,7 @@ def main():
 
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs * len(train_loader), eta_min=1e-6)
 
-    metrics = Metrics_classification(num_classes=2, threshold=0.5, mode="binary")  # use  mode="binary" only in case of binary classification with 2 outputs 
+    metrics = Metrics_classification(num_classes=14, threshold=0.5, mode="multi")  # use  mode="binary" only in case of binary classification with 2 outputs 
 
     trainer = Trainer(
         num_epochs=num_epochs, 
