@@ -79,11 +79,13 @@ def main():
         num_classes = 2
         train_dataset = BinaryLabelDataset(images_dir=f"{data_dir}/dataset_256/train/images", labels_dir=f"{data_dir}/dataset_256/train/labels", transform=processor)
         val_dataset = BinaryLabelDataset(images_dir=f"{data_dir}/dataset_256/val/images", labels_dir=f"{data_dir}/dataset_256/val/labels", transform=processor)
+        weights = train_dataset.get_weights()
         metrics = Metrics_classification(num_classes=2, threshold=0.5, mode="binary")  # use  mode="binary" only in case of binary classification with 2 outputs
-        criterion = torch.nn.CrossEntropyLoss()
+        # criterion = torch.nn.CrossEntropyLoss()
+        criterion = nn.CrossEntropyLoss(weight=torch.tensor(weights, device=device, dtype=torch.float32))
 
         
-    model = LoraModel(model, num_class=num_classes, lora_config=lora_config)
+    model = LoraModel(model, num_class=num_classes, lora_config=lora_config).to(device)
 
     print(model)
 
