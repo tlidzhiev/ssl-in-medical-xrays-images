@@ -34,9 +34,6 @@ class Trainer():
         self.model.train()
         if self.freeze_enc:
             self.model.eval()
-            for name, param in self.model.named_parameters():
-                if "lora" in name:
-                    param.requires_grad = True
 
             for param in self.model.fc.parameters(): # or change to your head
                 param.requires_grad = True
