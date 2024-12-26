@@ -43,7 +43,7 @@ class Metrics_classification():
         else:
             predictions = (logits > self.threshold).astype(float)
 
-        # print(logits, labels, predictions)
+        print(logits.shape, labels.shape, predictions.shape)
         return {
                 "accuracy" : self.accuracy(labels, predictions),
                 "f1_score": self.f1(labels, predictions, average=self.average),

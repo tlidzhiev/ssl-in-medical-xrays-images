@@ -32,10 +32,10 @@ class Trainer():
         train_loss = []
 
         self.model.train()
-        if self.freeze_enc:
-            self.model.eval()
-            for param in self.model.fc.parameters(): # or change to your head
-                param.requires_grad = True
+        # if self.freeze_enc:
+        #     self.model.eval()
+        #     for param in self.model.fc.parameters(): # or change to your head
+        #         param.requires_grad = True
 
         for ind, batch in enumerate(tqdm(self.train_loader, desc=tqdm_desc)):
             images, labels = batch
@@ -61,6 +61,8 @@ class Trainer():
                 )
                 self.writer.add_scalar("train loss", np.mean(train_loss))
                 train_loss = []
+            
+            break
 
 
     @torch.no_grad()
@@ -71,6 +73,7 @@ class Trainer():
 
         self.model.eval()
 
+        i = 0
         for batch in tqdm(self.test_loader, desc=tqdm_desc):
             images, labels = batch
             images['pixel_values'] = images['pixel_values'][0]
@@ -86,8 +89,12 @@ class Trainer():
             logits = logits.detach().cpu().numpy().tolist()
             all_logits.extend(logits)
             all_labels.extend(labels)
+            i += 1
+            if i > 50:
+                break
         
         metric = self.metrics(all_logits, all_labels)
+        print(metric)
         self.writer.set_step(epoch * len(self.train_loader), part)
         self.writer.add_scalar(f"{part} loss", np.mean(test_loss))
         for key, value in metric.items():
@@ -109,5 +116,5 @@ class Trainer():
                 if not self.scheduler_per_batch:
                     self.scheduler.step()
             
-            if self.save_model_step and epoch % self.save_model_step == 0:
+            if self.save_model_step > 0 and epoch % self.save_model_step == 0:
                 torch.save(self.model.state_dict(), "weights.pt")

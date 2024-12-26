@@ -9,18 +9,18 @@ from transformers import AutoImageProcessor, AutoModel
 
 from src.trainer import Trainer, WandBWriter, Metrics_classification
 from src.datasets import BinaryLabelDataset, MultiLabelDataset
+import typing as tp
 
 
 class LoraModel(nn.Module):
     def __init__(self, encoder, num_class=1, lora_config=None) -> None:
         super().__init__()
 
-        self.encoder = encoder
         self.lora = get_peft_model(encoder, lora_config)
         self.fc = nn.Linear(768, num_class)
     
     def forward(self, x):
-        x = self.encoder(**x)
+        x = self.lora(**x)
         x = self.fc(x.pooler_output)
         return x
     
@@ -34,6 +34,8 @@ def parse_args():
                         type=bool, default=False)
     parser.add_argument('-bs', '--batch_size', help="Batch size", required=False,
                         type=int, default=16)
+    parser.add_argument('-save', '--save_model_step', help="save_model_step", required=False,
+                        type=int, default=0)
     return parser.parse_args()
 
 def main():
@@ -44,8 +46,8 @@ def main():
     )
 
     batch_size = args.batch_size
-    num_epochs = 50
-    save_model_step = False
+    num_epochs = 70
+    save_model_step = args.save_model_step
     scheduler_per_batch = True
     freeze_enc = True
     init_lr = 1e-2
@@ -66,15 +68,19 @@ def main():
     )
 
     if args.multilabel:
-        num_classes = 15
+        num_classes = 14
+        train_dataset = MultiLabelDataset(images_dir=f"{data_dir}/dataset_256/train/images", labels_dir=f"{data_dir}/dataset_256/train/labels",
+                                          num_classes=num_classes, transform=processor)
+        val_dataset = MultiLabelDataset(images_dir=f"{data_dir}/dataset_256/val/images", labels_dir=f"{data_dir}/dataset_256/val/labels",
+                                          num_classes=num_classes, transform=processor)
+        metrics = Metrics_classification(num_classes=num_classes, threshold=0.5)
+        criterion = nn.BCEWithLogitsLoss()
+    else:  # binary
+        num_classes = 2
         train_dataset = BinaryLabelDataset(images_dir=f"{data_dir}/dataset_256/train/images", labels_dir=f"{data_dir}/dataset_256/train/labels", transform=processor)
         val_dataset = BinaryLabelDataset(images_dir=f"{data_dir}/dataset_256/val/images", labels_dir=f"{data_dir}/dataset_256/val/labels", transform=processor)
-        metrics = Metrics_classification(num_classes=2, threshold=0.5)
-    else:
-        num_classes = 2
-        train_dataset = MultiLabelDataset(images_dir=f"{data_dir}/dataset_256/train/images", labels_dir=f"{data_dir}/dataset_256/train/labels", transform=processor)
-        val_dataset = MultiLabelDataset(images_dir=f"{data_dir}/dataset_256/val/images", labels_dir=f"{data_dir}/dataset_256/val/labels", transform=processor)
-        metrics = Metrics_classification(num_classes=2, threshold=0.5, mode="binary")  # use  mode="binary" only in case of binary classification with 2 outputs 
+        metrics = Metrics_classification(num_classes=2, threshold=0.5, mode="binary")  # use  mode="binary" only in case of binary classification with 2 outputs
+        criterion = torch.nn.CrossEntropyLoss()
 
         
     model = LoraModel(model, num_class=num_classes, lora_config=lora_config)
@@ -86,8 +92,6 @@ def main():
     val_loader =  DataLoader(val_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=4)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=init_lr)
-
-    criterion = torch.nn.CrossEntropyLoss()
 
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs * len(train_loader), eta_min=0.0001)
 
