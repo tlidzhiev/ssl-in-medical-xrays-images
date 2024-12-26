@@ -23,11 +23,12 @@ class LoraModel(nn.Module):
         super().__init__()
 
         self.lora_config = lora_config
-        self.encoder = encoder
+        self.encoder = get_peft_model(encoder, lora_config)
+                                      
         self.fc = nn.Linear(768, num_class)
     
     def forward(self, x):
-        x = get_peft_model(self.encoder(**x), self.lora_config)
+        x = self.encoder(**x)
         x = self.fc(x.pooler_output)
         return x
 
@@ -67,7 +68,7 @@ def main():
         bias="none"
     )
 
-    model = LinProbModel(AutoModel.from_pretrained("microsoft/rad-dino-maira-2"), 2, lora_config=lora_config).to(device)
+    model = LoraModel(AutoModel.from_pretrained("microsoft/rad-dino-maira-2"), 2, lora_config=lora_config).to(device)
     print(model)
 
     train_dataset = BinaryLabelDataset(images_dir=f"{data_dir}/dataset_256/train/images", labels_dir=f"{data_dir}/dataset_256/train/labels", transform=processor)
