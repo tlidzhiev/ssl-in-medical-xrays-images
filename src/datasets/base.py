@@ -18,6 +18,7 @@ class BaseDataset(Dataset):
         labels_dir: Union[str, Path] = None,
         transform=None,
     ):
+        self.num_classes = num_classes
         self.images_dir = ROOT_PATH / Path(images_dir)
         self.labels_dir = ROOT_PATH / Path(labels_dir) if labels_dir else None
         self.transform = transform

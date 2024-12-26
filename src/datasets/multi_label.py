@@ -28,3 +28,4 @@ class MultiLabelDataset(BaseDataset):
         class_counts = np.sum(non_zero_labels, axis=0)
         self.weights = n_samples / (n_classes * class_counts)
         assert len(self.weights) == self.num_classes
+        return self.weights
