@@ -8,7 +8,7 @@ from peft import LoraConfig, get_peft_model
 from transformers import AutoImageProcessor, AutoModel
 
 from src.trainer import Trainer, WandBWriter, Metrics_classification
-from src.datasets import BinaryLabelDataset
+from src.datasets import BinaryLabelDataset, MultiLabelDataset
 
 
 class LoraModel(nn.Module):
@@ -30,6 +30,10 @@ def parse_args():
                         type=str, default="train")
     parser.add_argument('-dir', '--data_dir_path', help='Directory path', required=False,
                         type=str, default="/kaggle/working/ssl-in-medical-xrays-images/data")
+    parser.add_argument('-mul', '--multilabel', help="Classification type", required=False,
+                        type=bool, default=False)
+    parser.add_argument('-bs', '--batch_size', help="Batch size", required=False,
+                        type=int, default=16)
     return parser.parse_args()
 
 def main():
@@ -39,7 +43,7 @@ def main():
         project_name=args.project_name,
     )
 
-    batch_size = 12 # len train_loader == 1000, can use with 16Gb GPU
+    batch_size = args.batch_size
     num_epochs = 50
     save_model_step = False
     scheduler_per_batch = True
@@ -61,12 +65,23 @@ def main():
         bias="none"
     )
 
-    # Load and wrap model
-    model = LoraModel(model, 2, lora_config=lora_config)
+    if args.multilabel:
+        num_classes = 15
+        train_dataset = BinaryLabelDataset(images_dir=f"{data_dir}/dataset_256/train/images", labels_dir=f"{data_dir}/dataset_256/train/labels", transform=processor)
+        val_dataset = BinaryLabelDataset(images_dir=f"{data_dir}/dataset_256/val/images", labels_dir=f"{data_dir}/dataset_256/val/labels", transform=processor)
+        metrics = Metrics_classification(num_classes=2, threshold=0.5)
+    else:
+        num_classes = 2
+        train_dataset = MultiLabelDataset(images_dir=f"{data_dir}/dataset_256/train/images", labels_dir=f"{data_dir}/dataset_256/train/labels", transform=processor)
+        val_dataset = MultiLabelDataset(images_dir=f"{data_dir}/dataset_256/val/images", labels_dir=f"{data_dir}/dataset_256/val/labels", transform=processor)
+        metrics = Metrics_classification(num_classes=2, threshold=0.5, mode="binary")  # use  mode="binary" only in case of binary classification with 2 outputs 
+
+        
+    model = LoraModel(model, num_class=num_classes, lora_config=lora_config)
+
     print(model)
 
-    train_dataset = BinaryLabelDataset(images_dir=f"{data_dir}/dataset_256/train/images", labels_dir=f"{data_dir}/dataset_256/train/labels", transform=processor)
-    val_dataset = BinaryLabelDataset(images_dir=f"{data_dir}/dataset_256/val/images", labels_dir=f"{data_dir}/dataset_256/val/labels", transform=processor)
+    
     train_loader =  DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=4)
     val_loader =  DataLoader(val_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=4)
 
@@ -76,7 +91,6 @@ def main():
 
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs * len(train_loader), eta_min=0.0001)
 
-    metrics = Metrics_classification(num_classes=2, threshold=0.5, mode="binary")  # use  mode="binary" only in case of binary classification with 2 outputs 
 
     trainer = Trainer(
         num_epochs=num_epochs, 
