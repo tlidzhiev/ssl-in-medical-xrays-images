@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torchvision.transforms as T
 from torch.utils.data import DataLoader
+from peft import LoraConfig, get_peft_model
 
 # Load model directly
 from transformers import AutoImageProcessor, AutoModel
@@ -10,18 +11,20 @@ from transformers import AutoImageProcessor, AutoModel
 from src.trainer import Trainer, WandBWriter, Metrics_classification
 from src.datasets import BinaryLabelDataset
 
-class LinProbModel(nn.Module):
-    def __init__(self, encoder, num_class=1) -> None:
+
+class LoraModel(nn.Module):
+    def __init__(self, encoder, num_class=1, lora_config=None) -> None:
         super().__init__()
 
         self.encoder = encoder
+        self.lora = get_peft_model(encoder, lora_config)
         self.fc = nn.Linear(768, num_class)
     
     def forward(self, x):
         x = self.encoder(**x)
         x = self.fc(x.pooler_output)
         return x
-
+    
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-pn', '--project_name', help='Project name', required=False,
@@ -37,7 +40,7 @@ def main():
         project_name=args.project_name,
     )
 
-    batch_size = 4 # len train_loader == 1000, can use with 16Gb GPU
+    batch_size = 32 # len train_loader == 1000, can use with 16Gb GPU
     num_epochs = 20
     save_model_step = False
     scheduler_per_batch = True
@@ -48,9 +51,19 @@ def main():
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-    processor = AutoImageProcessor.from_pretrained("microsoft/rad-dino-maira-2")
-    model = LinProbModel(AutoModel.from_pretrained("microsoft/rad-dino-maira-2"), 2).to(device)
-    print(model)
+    processor = AutoImageProcessor.from_pretrained("microsoft/rad-dino")
+    model = AutoModel.from_pretrained("microsoft/rad-dino").to(device)
+
+    lora_config = LoraConfig(
+        r=16,
+        lora_alpha=32,
+        target_modules=["query", "value"],
+        lora_dropout=0.1,
+        bias="none"
+    )
+
+    # Load and wrap model
+    model = LoraModel(model, 1, lora_config=lora_config)
 
     train_dataset = BinaryLabelDataset(images_dir=f"{data_dir}/dataset_256/train/images", labels_dir=f"{data_dir}/dataset_256/train/labels", transform=processor)
     val_dataset = BinaryLabelDataset(images_dir=f"{data_dir}/dataset_256/val/images", labels_dir=f"{data_dir}/dataset_256/val/labels", transform=processor)
