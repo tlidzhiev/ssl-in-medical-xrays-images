@@ -17,7 +17,7 @@ class MultiLabelDataset(BaseDataset):
         transform=None,
     ):
         self.num_classes = num_classes
-        super().__init__(images_dir, labels_dir, transform)
+        super().__init__(num_classes, images_dir, labels_dir, transform)
 
     def _load_labels(self, label_path: Path):
         with label_path.open("r") as f:
