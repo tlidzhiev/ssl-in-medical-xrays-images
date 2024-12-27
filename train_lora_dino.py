@@ -73,8 +73,9 @@ def main():
                                           num_classes=num_classes, transform=processor)
         val_dataset = MultiLabelDataset(images_dir=f"{data_dir}/dataset_256/val/images", labels_dir=f"{data_dir}/dataset_256/val/labels",
                                           num_classes=num_classes, transform=processor)
+        weights = train_dataset.get_weights()
         metrics = Metrics_classification(num_classes=num_classes, threshold=0.5)
-        criterion = nn.BCEWithLogitsLoss()
+        criterion = nn.BCEWithLogitsLoss(weight=torch.tensor(weights, device=device, dtype=torch.float32))
     else:  # binary
         num_classes = 2
         train_dataset = BinaryLabelDataset(images_dir=f"{data_dir}/dataset_256/train/images", labels_dir=f"{data_dir}/dataset_256/train/labels", transform=processor)
