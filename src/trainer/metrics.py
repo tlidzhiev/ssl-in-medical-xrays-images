@@ -41,7 +41,7 @@ class Metrics_classification():
             predictions =  np.argmax(logits, axis=1)
             logits = logits[:,1]
         else:
-            predictions = (logits > self.threshold).float()
+            predictions = (logits > self.threshold).astype(float)
 
         # print(logits, labels, predictions)
         return {
