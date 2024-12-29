@@ -9,6 +9,16 @@ from .base import BaseDataset
 class MultiLabelDataset(BaseDataset):
     NO_FINDINGS_CLASS_ID = 14
 
+    def __init__(
+        self,
+        num_classes: int,
+        images_dir: Union[str, Path],
+        labels_dir: Union[str, Path] = None,
+        transform=None,
+    ):
+        self.num_classes = num_classes
+        super().__init__(num_classes, images_dir, labels_dir, transform)
+
     def _load_labels(self, label_path: Path):
         with label_path.open("r") as f:
             lines = f.readlines()

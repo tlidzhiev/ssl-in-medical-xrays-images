@@ -8,3 +8,4 @@ torchvision==0.17.0
 hydra-core
 scikit-learn
 kagglehub
+peft
